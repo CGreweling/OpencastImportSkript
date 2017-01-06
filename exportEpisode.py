@@ -19,13 +19,43 @@ searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.heade
 
 mediapackagesearch = searchresult.json()['search-results']['result']['mediapackage']
 
+
+trackfromarchive=[]
+attachmentsfromarchive=[]
+mediapackagearchive= dict()
+
 # Get mediapackage from episode/archive service
 archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
-mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
+if (archiveresult.json()['search-results'].get('result')):
+    mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
+    # get Tracks
 
-# get all tracks from search both services
+    tracktmp = mediapackagearchive['media']['track']
+
+    # make sure that tracks are lists not only objects
+    if (isinstance(tracktmp, list)):
+        trackfromarchive = tracktmp
+    else:
+        trackfromarchive = []
+        trackfromarchive.append(tracktmp)
+
+    attachmentstmp = mediapackagearchive['attachments']['attachment']
+    # make sure that tracks are lists not only objects
+    if (isinstance(attachmentstmp, list)) :
+     attachmentsfromarchive = attachmentstmp
+
+    else:
+     attachmentsfromarchive= []
+     attachmentsfromarchive.append(attachmentstmp)
+
+
+else:
+    print ("Hint: This Episode was not Archived")
+
+
+
+# get all tracks from search
 track = mediapackagesearch['media']['track']
-tracktmp = mediapackagearchive['media']['track']
 
 # make sure that tracks are lists not only objects
 if (isinstance(track, list)) :
@@ -34,12 +64,27 @@ else:
     trackfrommediapackage = []
     trackfrommediapackage.append(track)
 
+
+
+
+# get attachment lists from both services
+attachments = mediapackagesearch['attachments']['attachment']
+attachmentsfrommediapackage = []
 # make sure that tracks are lists not only objects
-if (isinstance(tracktmp, list)) :
-    trackfromarchive = tracktmp
+if (isinstance(attachments, list)) :
+    attachmentsfrommediapackage = attachments
 else:
-    trackfromarchive = []
-    trackfromarchive.append(tracktmp)
+
+    attachmentsfrommediapackage.append(attachments)
+
+
+
+
+
+
+
+# replace old attachments list
+mediapackagesearch['attachments']['attachment'] = attachmentsfromarchive + attachmentsfrommediapackage
 
 # merge both track lists
 tracknew = trackfrommediapackage + trackfromarchive
@@ -54,39 +99,8 @@ for t in tracknew:
 # add new tracklist to mediapackage again
 mediapackagesearch['media']['track'] = trackwithoutrtmp
 
-# get attachment lists from both services
-attachments = mediapackagesearch['attachments']['attachment']
-
-# make sure that tracks are lists not only objects
-if (isinstance(attachments, list)) :
-    attachmentsfrommediapackage = attachments
-else:
-    attachmentsfrommediapackage = []
-    attachmentsfrommediapackage.append(attachments)
 
 
-
-if "attachment" in mediapackagearchive['attachments']:
-    attachmentstmp = mediapackagearchive['attachments']['attachment']
-    # make sure that tracks are lists not only objects
-    if (isinstance(attachmentstmp, list)) :
-     attachmentsfromarchive = attachmentstmp
-     # merge attachment lists
-     attachmentsnew = attachmentsfrommediapackage + attachmentsfromarchive
-    else:
-     attachmentsfromarchive= []
-     attachmentsfromarchive.append(attachmentstmp)
-     attachmentsnew = attachmentsfrommediapackage + attachmentsfromarchive
-
-else:
-     attachmentsnew = attachmentsfrommediapackage
-
-
-
-
-
-# replace old attachments list
-mediapackagesearch['attachments']['attachment'] = attachmentsnew
 
 #finalmediapackage = dict()
 finalmediapackage = {}
@@ -96,8 +110,8 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 # write to json file with current ID
-with open(sys.argv[1]+'.json', 'w') as f:
-  json.dump(finalmediapackage, f, ensure_ascii=False)
+#with open(sys.argv[1]+'.json', 'w') as f:
+#  json.dump(finalmediapackage, f, ensure_ascii=False)
 
 #################### start ingesting
 
@@ -120,10 +134,22 @@ def parseTagsToString(tags):
      else:
             #tags= t.get("tags").get("tag")
             return tags
+#Opencast sends an Object if list cotains only one Item instead of list
+def jsonMakeObjectToList(jsonobject):
+    if (not isinstance(jsonobject, list)):
+        tmpObject = jsonobject
+        jsonobject = []
+        jsonobject.append(tmpObject)
+        return jsonobject
+    else:
+     return jsonobject
+
+#create correct json object
+mediapackagesearch['metadata']['catalog'] = jsonMakeObjectToList(mediapackagesearch['metadata']['catalog'])
 
 # download catalogs with curl and upload them to the target opencast (no checking for errors yet)
 for c in mediapackagesearch['metadata']['catalog']:
-    if ('type' and 'url' in c):
+    if (c.get('type') and c.get('url')):
         filename = str(c.get('url')).split("/")[-1]
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + c.get('url') + " -o " + filename
         os.system(command)
@@ -136,7 +162,7 @@ for c in mediapackagesearch['metadata']['catalog']:
 
 # download attachments with curl and upload them to the target opencast (no checking for errors yet)
 for a in mediapackagesearch['attachments']['attachment']:
-    if (type and 'url' in a):
+    if (c.get('type') and c.get('url')):
         filename = str(a.get('url')).split("/")[-1]
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + a.get('url') + " -o " + filename
         os.system(command)
@@ -150,8 +176,7 @@ for a in mediapackagesearch['attachments']['attachment']:
 
 # download tracks with curl and upload them to the target opencast (no checking for errors yet)
 for t in mediapackagesearch['media']['track']:
-    print t.get('id')
-    if (type and 'url' in t):
+    if (c.get('type') and c.get('url')):
         filename = str(t.get('url')).split("/")[-1]
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + t.get('url') + " -o " + filename
         os.system(command)
@@ -172,7 +197,7 @@ def prettify(elem):
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
 
-print(prettify(ElementTree.fromstring(ingest_mp)))
+#print(prettify(ElementTree.fromstring(ingest_mp)))
 
 def ingestMediapackage(mediapackage):
     mediapackage=prettify(ElementTree.fromstring(ingest_mp))
@@ -181,7 +206,7 @@ def ingestMediapackage(mediapackage):
     f.close()
     payload = {'mediaPackage': mediapackage}
     ingest_track_resp = requests.post(config.targetserver + "/ingest/ingest/"+config.targetworkflow, headers=config.header, auth=targetauth, data=payload)
-    print(ingest_track_resp)
     print(ingest_track_resp.text)
+    print ("Ingesting done")
 
 ingestMediapackage(ingest_mp)
