@@ -18,5 +18,5 @@ targetuser = "opencast_system_account"
 targetpassword = "CHANGE_ME"
 
 #TargetWorkflow
-targetworkflow="import"
+targetworkflow="ng-import"
 
