@@ -3,6 +3,7 @@ from requests.auth import HTTPDigestAuth
 from xml.etree import ElementTree
 from xml.dom import minidom
 import config
+import handleSeries
 
 
 
@@ -24,31 +25,24 @@ trackfromarchive=[]
 attachmentsfromarchive=[]
 mediapackagearchive= dict()
 
+#Opencast sends an Object if list cotains only one Item instead of list
+def jsonMakeObjectToList(jsonobject):
+    if (not isinstance(jsonobject, list)):
+        tmpObject = jsonobject
+        jsonobject = []
+        jsonobject.append(tmpObject)
+        return jsonobject
+    else:
+     return jsonobject
+
+
 # Get mediapackage from episode/archive service
 archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
 if (archiveresult.json()['search-results'].get('result')):
     mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
     # get Tracks
-
-    tracktmp = mediapackagearchive['media']['track']
-
-    # make sure that tracks are lists not only objects
-    if (isinstance(tracktmp, list)):
-        trackfromarchive = tracktmp
-    else:
-        trackfromarchive = []
-        trackfromarchive.append(tracktmp)
-
-    attachmentstmp = mediapackagearchive['attachments']['attachment']
-    # make sure that tracks are lists not only objects
-    if (isinstance(attachmentstmp, list)) :
-     attachmentsfromarchive = attachmentstmp
-
-    else:
-     attachmentsfromarchive= []
-     attachmentsfromarchive.append(attachmentstmp)
-
-
+    trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
+    attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
 else:
     print ("Hint: This Episode was not Archived")
 
@@ -74,13 +68,7 @@ attachmentsfrommediapackage = []
 if (isinstance(attachments, list)) :
     attachmentsfrommediapackage = attachments
 else:
-
     attachmentsfrommediapackage.append(attachments)
-
-
-
-
-
 
 
 # replace old attachments list
@@ -100,9 +88,6 @@ for t in tracknew:
 mediapackagesearch['media']['track'] = trackwithoutrtmp
 
 
-
-
-#finalmediapackage = dict()
 finalmediapackage = {}
 finalmediapackage['mediapackage'] = mediapackagesearch
 
@@ -134,15 +119,7 @@ def parseTagsToString(tags):
      else:
             #tags= t.get("tags").get("tag")
             return tags
-#Opencast sends an Object if list cotains only one Item instead of list
-def jsonMakeObjectToList(jsonobject):
-    if (not isinstance(jsonobject, list)):
-        tmpObject = jsonobject
-        jsonobject = []
-        jsonobject.append(tmpObject)
-        return jsonobject
-    else:
-     return jsonobject
+
 
 #create correct json object
 mediapackagesearch['metadata']['catalog'] = jsonMakeObjectToList(mediapackagesearch['metadata']['catalog'])
@@ -160,6 +137,8 @@ for c in mediapackagesearch['metadata']['catalog']:
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 
+# create correct json object
+mediapackagesearch['attachments']['attachment']=jsonMakeObjectToList(mediapackagesearch['attachments']['attachment'])
 # download attachments with curl and upload them to the target opencast (no checking for errors yet)
 for a in mediapackagesearch['attachments']['attachment']:
     if (c.get('type') and c.get('url')):
@@ -174,6 +153,8 @@ for a in mediapackagesearch['attachments']['attachment']:
         os.remove(filename)
 
 
+# create correct json object
+mediapackagesearch['media']['track']=jsonMakeObjectToList(mediapackagesearch['media']['track'])
 # download tracks with curl and upload them to the target opencast (no checking for errors yet)
 for t in mediapackagesearch['media']['track']:
     if (c.get('type') and c.get('url')):

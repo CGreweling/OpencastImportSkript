@@ -8,6 +8,7 @@ import Tkinter as tk
 from Tkinter import *
 import tkMessageBox
 import config
+import handleSeries
 
 #Digest login source server
 sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
@@ -59,6 +60,9 @@ def ingest():
     for key, value in selectedSeries.iteritems():
         if value.get()=='1':
             print key
+            #check if Series exists, else create
+            handleSeries.handleSeries(key)
+
             command="python exportSeries.py "+ key
             os.system(command)
 
