@@ -24,6 +24,7 @@ mediapackagesearch = searchresult.json()['search-results']['result']['mediapacka
 trackfromarchive=[]
 attachmentsfromarchive=[]
 mediapackagearchive= dict()
+archivePresentationTracks=False
 
 #Opencast sends an Object if list cotains only one Item instead of list
 def jsonMakeObjectToList(jsonobject):
@@ -44,7 +45,8 @@ if (archiveresult.json()['search-results'].get('result')):
     trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
     attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
 else:
-    print ("Hint: This Episode was not Archived")
+    archivePresentationTracks=True
+    print ("Hint: This Episode was not Archived + Archive for Presentation Tracks")
 
 
 
@@ -154,7 +156,7 @@ for a in mediapackagesearch['attachments']['attachment']:
 
 
 # create correct json object
-mediapackagesearch['media']['track']=jsonMakeObjectToList(mediapackagesearch['media']['track'])
+#mediapackagesearch['media']['track']=jsonMakeObjectToList(mediapackagesearch['media']['track'])
 # download tracks with curl and upload them to the target opencast (no checking for errors yet)
 for t in mediapackagesearch['media']['track']:
     if (c.get('type') and c.get('url')):
@@ -162,8 +164,9 @@ for t in mediapackagesearch['media']['track']:
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + t.get('url') + " -o " + filename
         os.system(command)
         files = {'file': open(filename, 'rb')}
-
         tags = parseTagsToString(t.get("tags").get("tag"))
+        if (archivePresentationTracks):
+            tags += ','+ 'archive'
         payload = {'flavor': t.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header, files=files, auth=targetauth, data=payload)
         ingest_mp = ingest_track_resp.text

@@ -56,15 +56,26 @@ f.close()
 
 selectedSeries = dict()
 
+
+def writeSelectedSeriestoFile():
+    selectedSeriesFile = ''
+    for key, value in selectedSeries.iteritems():
+        if value.get() == '1':
+           selectedSeriesFile+=selectedSeriesFile + key+' ; ' + " " + '\n'
+    f = open("Selecet_Series_File.txt",'w')
+    f.write(selectedSeriesFile.encode('UTF-8'))
+    f.close()
+    print ("Selecet_Series_File.txt Created!")
+
 def ingest():
     for key, value in selectedSeries.iteritems():
         if value.get()=='1':
             print key
             #check if Series exists, else create
             handleSeries.handleSeries(key)
-
             command="python exportSeries.py "+ key
             os.system(command)
+
 
 #create ui to select Series for ingest
 root = tk.Tk()
@@ -85,6 +96,9 @@ for key, value in seriesDiconary.iteritems():
 
 button = Button(root,text='Ingest Selected Series',command=ingest)
 button.pack()
+button = Button (root, text="Create Selected Series File",command=writeSelectedSeriestoFile)
+button.pack()
 button = Button (root, text="Quit!",fg='red', command=root.destroy)
 button.pack()
+
 root.mainloop()
