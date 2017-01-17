@@ -3,7 +3,6 @@ from requests.auth import HTTPDigestAuth
 from xml.etree import ElementTree
 from xml.dom import minidom
 import config
-import handleSeries
 
 
 

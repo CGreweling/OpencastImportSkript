@@ -1,8 +1,7 @@
-import json,sys,requests,re,os,xml
+import sys,requests,re,os
 from requests.auth import HTTPDigestAuth
-from xml.etree import ElementTree
-from xml.dom import minidom
-import config
+
+import config, handleSeries
 
 #Digest login source server
 sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
@@ -11,6 +10,10 @@ sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
 searchrequest = config.engageserver + config.seriesSearchendpoint + sys.argv[1]
 
 print searchrequest
+
+# check if Series exists, else create
+handleSeries.handleSeries(sys.argv[1])
+
 
 #Opencast sends an Object if list cotains only one Item instead of list
 def jsonMakeObjectToList(jsonobject):
