@@ -60,7 +60,7 @@ def writeSelectedSeriestoFile():
     f = open("Selecet_Series_File.txt",'w')
     f.write(selectedSeriesFile.encode('UTF-8'))
     f.close()
-    print ("Selecet_Series_File.txt Created!")
+    print ("Select_Series_File.txt Created!")
 
 def ingest():
     for key, value in selectedSeries.iteritems():
