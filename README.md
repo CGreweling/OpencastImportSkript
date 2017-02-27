@@ -19,6 +19,9 @@ So a non IT-Guy can sort and select the wanted Series.
 ## Importing from Commandline
 
 To import Series from a file where a Series Id is in each line:
-for line in $(cat SelectedSeries.txt); do python exportSeries.py $line; done
+
+```for line in $(cat SelectedSeries.txt); do python exportSeries.py $line; done```
+
 The Same for Importing Episodes from a File:
-for line in $(cat SelectedEpisodes.txt); do python exportEpisode.py $line; done
+
+```for line in $(cat SelectedEpisodes.txt); do python exportEpisode.py $line; done```
