@@ -11,11 +11,11 @@ sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
 seriesDiconary = dict()
 
 #get Series count
-archiveSeriesCount =  "/series/count"
+archiveSeriesCount =  "/series/series.json"
 archiveSeriesCountrequest = config.archiveserver + archiveSeriesCount
 seriesCount= requests.get(archiveSeriesCountrequest, auth=sourceauth, headers=config.header)
 print archiveSeriesCountrequest
-print seriesCount.text + " Series found"
+print seriesCount.json()['totalCount'] + " Series found"
 
 finalSeriesString=''
 
@@ -23,7 +23,7 @@ finalSeriesString=''
 page=0
 #result per request
 resultsize=1
-seriesCount = int(seriesCount.text)
+seriesCount = int(seriesCount.json()['totalCount'])
 #get the number of pages
 pages = seriesCount/resultsize
 while page < pages:
