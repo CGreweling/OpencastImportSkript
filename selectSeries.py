@@ -30,9 +30,7 @@ while page < pages:
       archiveenpoint = "/series/series.json?count="+str(resultsize)+"&startPage="+str(page)
       archiverequest = config.archiveserver + archiveenpoint
       archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header).json()
-
       if  archiveresult['catalogs']:
-          for m in archiveresult:
               if archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value'] not in finalSeriesString:
                   title=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['title'][0]['value']
 
@@ -51,19 +49,27 @@ f.close()
 
 selectedSeries = dict()
 
+def delteDuplicates(dictWithDuplicates):
+    result = {}
+    for key,value in dictWithDuplicates.items():
+        if value not in result.values():
+            result[key] = value
+    return result
 
 def writeSelectedSeriestoFile():
+    selectedSeriesForFile=delteDuplicates(selectedSeries)
     selectedSeriesFile = ''
-    for key, value in selectedSeries.iteritems():
+    for key, value in selectedSeriesForFile.iteritems():
         if value.get() == '1':
-           selectedSeriesFile+=selectedSeriesFile + key+' ; ' + " " + '\n'
+           selectedSeriesFile=selectedSeriesFile + key+' ; ' + seriesDiconary.get(key) + '\n'
     f = open("Selecet_Series_File.txt",'w')
     f.write(selectedSeriesFile.encode('UTF-8'))
     f.close()
     print ("Selecet_Series_File.txt Created!")
 
 def ingest():
-    for key, value in selectedSeries.iteritems():
+    selectedSeriesForIngest=delteDuplicates(selectedSeries)
+    for key, value in selectedSeriesForIngest.iteritems():
         if value.get()=='1':
             print key
             command="python exportSeries.py "+ key
