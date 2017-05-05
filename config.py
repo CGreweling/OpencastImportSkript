@@ -1,22 +1,27 @@
 #Digest login source server
 sourceuser = "matterhorn_system_account"
-sourcepassword = "Password"
+sourcepassword = "CHANGE_ME"
 header = {"X-Requested-Auth": "Digest"}
 
 #Source Engage Server data
-engageserver = "http://testserver.de"
+engageserver = "http://your.server.com"
 searchendpoint = "/search/episode.json?id="
-seriesSearchendpoint = "/search/episode.json?cid="
+seriesSearchendpoint = "/search/episode.json?q="
 
 #Source Admin/Archive Server
-archiveserver = "http://testserver.de"
+archiveserver = "http://your.server.com"
 archiveendpoint = "/episode/episode.json?id="
 
 #target admin/ingest server
-targetserver = "http://testserver.de"
+targetserver = "http://yourtargetserver.com"
 targetuser = "opencast_system_account"
-targetpassword = "CHANGE_ME"
+targetpassword = "yourpassword"
+
+#target admin/ingest server
+#targetserver = "http://localhost:8080"
+#targetuser = "opencast_system_account"
+#targetpassword = "CHANGE_ME"
+
 
 #TargetWorkflow
-targetworkflow="ng-import"
-
+targetworkflow="import"
