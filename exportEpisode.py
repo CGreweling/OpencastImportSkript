@@ -38,14 +38,16 @@ def jsonMakeObjectToList(jsonobject):
 
 # Get mediapackage from episode/archive service
 archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
-if (archiveresult.json()['search-results'].get('result')):
-    mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
-    # get Tracks
-    trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
-    attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
-else:
-    archivePresentationTracks=True
-    print ("Hint: This Episode was not Archived + Archive for Presentation Tracks")
+print archiveresult.status_code
+if (archiveresult.status_code!=404):
+    if (archiveresult.json()['search-results'].get('result')):
+        mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
+        # get Tracks
+        trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
+        attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
+    else:
+        archivePresentationTracks=True
+        print ("Hint: This Episode was not Archived + Archive for Presentation Tracks")
 
 
 
@@ -125,14 +127,24 @@ def parseTagsToString(tags):
 #create correct json object
 mediapackagesearch['metadata']['catalog'] = jsonMakeObjectToList(mediapackagesearch['metadata']['catalog'])
 
+def downloadToFile(url,filename):
+    print ('Download from ULR:'+  url)
+    r = requests.get(url, auth=sourceauth, headers=config.header)
+    with open(filename, "wb") as code:
+        code.write(r.content)
+
 # download catalogs with curl and upload them to the target opencast (no checking for errors yet)
 for c in mediapackagesearch['metadata']['catalog']:
     if (c.get('type') and c.get('url')):
         filename = str(c.get('url')).split("/")[-1]
-        command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + c.get('url') + " -o " + filename
-        os.system(command)
+        #command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + c.get('url') + " -o " + filename
+        #os.system(command)
+        downloadToFile(c.get('url'),filename)
         files = {'file': open(filename, 'rb')}
-        tags = parseTagsToString(c.get("tags").get("tag"))
+        tags=""
+        if c.get("tags"):
+            tags = parseTagsToString(c.get("tags").get("tag"))
+
         payload = {'flavor': c.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header, files=files, auth=targetauth, data=payload)
         ingest_mp = ingest_track_resp.text
@@ -142,12 +154,16 @@ for c in mediapackagesearch['metadata']['catalog']:
 mediapackagesearch['attachments']['attachment']=jsonMakeObjectToList(mediapackagesearch['attachments']['attachment'])
 # download attachments with curl and upload them to the target opencast (no checking for errors yet)
 for a in mediapackagesearch['attachments']['attachment']:
-    if (c.get('type') and c.get('url')):
+    if (a.get('type') and a.get('url')) and a.get('type')!='security/xacml':
         filename = str(a.get('url')).split("/")[-1]
-        command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + a.get('url') + " -o " + filename
-        os.system(command)
+        #command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + a.get('url') + " -o " + filename
+        #os.system(command)
+        downloadToFile(a.get('url'),filename)
         files = {'file': open(filename, 'rb')}
-        tags = parseTagsToString(a.get("tags").get("tag"))
+        tags=""
+        if a.get("tags"):
+            tags = parseTagsToString(a.get("tags").get("tag"))
+
         payload = {'flavor': a.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addAttachment", headers=config.header, files=files, auth=targetauth, data=payload)
         ingest_mp = ingest_track_resp.text
@@ -158,10 +174,12 @@ for a in mediapackagesearch['attachments']['attachment']:
 #mediapackagesearch['media']['track']=jsonMakeObjectToList(mediapackagesearch['media']['track'])
 # download tracks with curl and upload them to the target opencast (no checking for errors yet)
 for t in mediapackagesearch['media']['track']:
-    if (c.get('type') and c.get('url')):
+    if (t.get('type') and t.get('url')) and "rtmp" not in t.get('url'):
         filename = str(t.get('url')).split("/")[-1]
-        command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + t.get('url') + " -o " + filename
-        os.system(command)
+        #command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + t.get('url') + " -o " + filename
+        #os.system(command)
+        downloadToFile(t.get('url'),filename)
+
         files = {'file': open(filename, 'rb')}
         tags = parseTagsToString(t.get("tags").get("tag"))
         if (archivePresentationTracks):
@@ -190,6 +208,9 @@ def ingestMediapackage(mediapackage):
     payload = {'mediaPackage': mediapackage}
     ingest_track_resp = requests.post(config.targetserver + "/ingest/ingest/"+config.targetworkflow, headers=config.header, auth=targetauth, data=payload)
     print(ingest_track_resp.text)
-    print ("Ingesting done")
-
+    if (ingest_track_resp.status_code!=200):
+        print ("Ingesting failed")
+    else:
+        print ("Ingesting done")
+print ingest_mp
 ingestMediapackage(ingest_mp)

@@ -11,11 +11,11 @@ sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
 seriesDiconary = dict()
 
 #get Series count
-archiveSeriesCount =  "/series/series.json"
+archiveSeriesCount =  "/search/series.json?series=true&episodes=false&limit=100"
 archiveSeriesCountrequest = config.archiveserver + archiveSeriesCount
 seriesCount= requests.get(archiveSeriesCountrequest, auth=sourceauth, headers=config.header)
-print archiveSeriesCountrequest
-print seriesCount.json()['totalCount'] + " Series found"
+#print seriesCount.text
+print seriesCount.json()['search-results']['total'] + " Series found"
 
 finalSeriesString=''
 
@@ -23,24 +23,31 @@ finalSeriesString=''
 page=0
 #result per request
 resultsize=1
-seriesCount = int(seriesCount.json()['totalCount'])
+seriesCount = int(seriesCount.json()['search-results']['total'])
 #get the number of pages
 pages = seriesCount/resultsize
 while page < pages:
-      archiveenpoint = "/series/series.json?count="+str(resultsize)+"&startPage="+str(page)
+      archiveenpoint = "/search/series.json?series=true&episodes=false&limit="+str(resultsize)+"&offset="+str(page)
       archiverequest = config.archiveserver + archiveenpoint
       archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header).json()
+      title=archiveresult['search-results']['result']['dcTitle']
+      seriesId=archiveresult['search-results']['result']['id']
 
-      if  archiveresult['catalogs']:
-          for m in archiveresult:
-              if archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value'] not in finalSeriesString:
-                  title=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['title'][0]['value']
+      seriesDiconary.update({seriesId: title})
+      finalSeriesString = finalSeriesString + title + " ; " + seriesId + '\n'
 
-                  seriesId=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value']
-                  finalSeriesString=finalSeriesString+title+ " ; "+seriesId+'\n'
-                  #safe id+title in an dictonary
-                  seriesDiconary.update({seriesId:title})
       page=page+1
+
+
+#      if  archiveresult['catalogs']:
+#          for m in archiveresult:
+#              if archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value'] not in finalSeriesString:
+#                  title=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['title'][0]['value']
+#
+#                 seriesId=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value']
+#
+#                 #safe id+title in an dictonary
+#                 seriesDiconary.update({seriesId:title})
 
 
 
