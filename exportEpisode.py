@@ -3,9 +3,9 @@ from requests.auth import HTTPDigestAuth
 from xml.etree import ElementTree
 from xml.dom import minidom
 import config
+import logging
 
-
-
+logging.basicConfig(filename=config.logging_file,level=logging.INFO)
 
 searchrequest = config.engageserver + config.searchendpoint + sys.argv[1]
 
@@ -108,9 +108,13 @@ sys.setdefaultencoding('utf-8')
 #ingest_mp = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><mediapackage xmlns="http://mediapackage.opencastproject.org" id="' + sys.argv[1]  + '" start="2016-08-01T12:44:03Z"><media/><metadata/><attachments/><publications/></mediapackage>'
 
 # create mediapackage with right ID
-ingest_track_resp = requests.put(config.targetserver + "/ingest/createMediaPackageWithID/"+sys.argv[1], headers=config.header, auth=targetauth)
-ingest_mp = ingest_track_resp.text
-
+ingest_mp_resp = requests.put(config.targetserver + "/ingest/createMediaPackageWithID/"+sys.argv[1], headers=config.header, auth=targetauth)
+if ingest_mp_resp.status_code==200:
+  ingest_mp = ingest_mp_resp.text
+else: 
+  ingest_mp_resp = requests.get(config.targetserver + "/ingest/createMediaPackage", headers=config.header, auth=targetauth) 
+  ingest_mp = ingest_mp_resp.text
+  logging.error(sys.argv[1]+' replaced with new uuid') 
 
 # parse Tags to String list seperated by ,
 def parseTagsToString(tags):
@@ -169,7 +173,6 @@ for a in mediapackagesearch['attachments']['attachment']:
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 
-
 # create correct json object
 #mediapackagesearch['media']['track']=jsonMakeObjectToList(mediapackagesearch['media']['track'])
 # download tracks with curl and upload them to the target opencast (no checking for errors yet)
@@ -212,5 +215,5 @@ def ingestMediapackage(mediapackage):
         print ("Ingesting failed")
     else:
         print ("Ingesting done")
-print ingest_mp
+#print ingest_mp
 ingestMediapackage(ingest_mp)
