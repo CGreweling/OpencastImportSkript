@@ -13,7 +13,7 @@ def handleSeries(seriesId):
 
 def existsSeries(seriesId):
     searchrequest = config.targetserver + '/series/'+ seriesId +'.xml'
-    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
+    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header, verify=False)
     if (searchresult.status_code==200):
         return True
     else:
@@ -23,7 +23,7 @@ def existsSeries(seriesId):
 def createSeries(seriesXml,seriesACL):
     payload = {'series': seriesXml, 'acl': seriesACL}
     createSeries_resp = requests.post(config.targetserver + "/series/", headers=config.header,
-                                      auth=targetauth, data=payload)
+                                      auth=targetauth, data=payload, verify=False)
     print createSeries_resp.text
 
 def getSeriesXml(seriesId):

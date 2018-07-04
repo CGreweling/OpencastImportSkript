@@ -40,8 +40,12 @@ def jsonMakeObjectToList(jsonobject):
 archiveresult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
 if (archiveresult.json()['search-results'].get('result')):
     mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
+    print json.dumps(mediapackagearchive)
     # get Tracks
-    trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
+    try: 
+      trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
+    except TypeError:
+      print "No track"  
     attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
 else:
     archivePresentationTracks=True
@@ -106,7 +110,7 @@ sys.setdefaultencoding('utf-8')
 #ingest_mp = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><mediapackage xmlns="http://mediapackage.opencastproject.org" id="' + sys.argv[1]  + '" start="2016-08-01T12:44:03Z"><media/><metadata/><attachments/><publications/></mediapackage>'
 
 # create mediapackage with right ID
-ingest_track_resp = requests.put(config.targetserver + "/ingest/createMediaPackageWithID/"+sys.argv[1], headers=config.header, auth=targetauth)
+ingest_track_resp = requests.put(config.targetserver + "/ingest/createMediaPackageWithID/"+sys.argv[1], headers=config.header, auth=targetauth, verify=False)
 ingest_mp = ingest_track_resp.text
 
 
@@ -134,7 +138,7 @@ for c in mediapackagesearch['metadata']['catalog']:
         files = {'file': open(filename, 'rb')}
         tags = parseTagsToString(c.get("tags").get("tag"))
         payload = {'flavor': c.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header, files=files, auth=targetauth, data=payload)
+        ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header, files=files, auth=targetauth, data=payload, verify=False)
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 
@@ -149,7 +153,7 @@ for a in mediapackagesearch['attachments']['attachment']:
         files = {'file': open(filename, 'rb')}
         tags = parseTagsToString(a.get("tags").get("tag"))
         payload = {'flavor': a.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addAttachment", headers=config.header, files=files, auth=targetauth, data=payload)
+        ingest_track_resp = requests.post(config.targetserver + "/ingest/addAttachment", headers=config.header, files=files, auth=targetauth, data=payload, verify=False)
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 
@@ -167,7 +171,7 @@ for t in mediapackagesearch['media']['track']:
         if (archivePresentationTracks):
             tags += ','+ 'archive'
         payload = {'flavor': t.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header, files=files, auth=targetauth, data=payload)
+        ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header, files=files, auth=targetauth, data=payload, verify=False)
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 
@@ -188,7 +192,7 @@ def ingestMediapackage(mediapackage):
     f.write(mediapackage)
     f.close()
     payload = {'mediaPackage': mediapackage}
-    ingest_track_resp = requests.post(config.targetserver + "/ingest/ingest/"+config.targetworkflow, headers=config.header, auth=targetauth, data=payload)
+    ingest_track_resp = requests.post(config.targetserver + "/ingest/ingest/"+config.targetworkflow, headers=config.header, auth=targetauth, data=payload, verify=False)
     print(ingest_track_resp.text)
     print ("Ingesting done")
 
