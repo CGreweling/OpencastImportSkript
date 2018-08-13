@@ -3,7 +3,7 @@ from requests.auth import HTTPDigestAuth
 from xml.etree import ElementTree
 from xml.dom import minidom
 import config
-
+from requests_toolbelt.multipart import encoder
 
 
 
@@ -166,12 +166,21 @@ for t in mediapackagesearch['media']['track']:
         filename = str(t.get('url')).split("/")[-1]
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + t.get('url') + " -o " + filename
         os.system(command)
-        files = {'file': open(filename, 'rb')}
         tags = parseTagsToString(t.get("tags").get("tag"))
         if (archivePresentationTracks):
-            tags += ','+ 'archive'
-        payload = {'flavor': t.get("type"), 'mediaPackage': ingest_mp, 'tags' : tags }
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header, files=files, auth=targetauth, data=payload, verify=False)
+          tags += ','+ 'archive'
+          session = requests.Session()
+          with open(filename, 'rb') as f:
+             #needed for Big Files
+             form = encoder.MultipartEncoder({
+              "documents": (filename, f, "application/octet-stream"),
+              "flavor": t.get("type"),
+              "mediaPackage": ingest_mp,
+              "tags" : tags,
+            })
+          headers = {"Prefer": "respond-async", "Content-Type": form.content_type}
+          ngest_track_resp = session.post(config.targetserver + "/ingest/addTrack", headers=config.header, auth=targetauth, data=payload, verify=False)
+
         ingest_mp = ingest_track_resp.text
         os.remove(filename)
 

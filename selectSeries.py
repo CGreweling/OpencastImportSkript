@@ -19,6 +19,19 @@ print seriesCount.text + " Series found"
 
 finalSeriesString=''
 
+def getStartTimeFromEpisodeforSeries(seriesId):
+    try:
+      searchrequest = config.engageserver + config.seriesSearchendpoint + seriesId
+
+      searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
+
+      mediapackagesearch = searchresult.json()['search-results']['result'][0]
+      #mediapackagesearch=jsonMakeObjectToList(mediapackagesearch)
+    
+      return mediapackagesearch['dcCreated']
+    except: 
+      return ''
+
 #python reqeusts can not handle as much data as e.g. firefox so... paging
 page=0
 #result per request
@@ -35,9 +48,11 @@ while page < pages:
                   title=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['title'][0]['value']
 
                   seriesId=archiveresult['catalogs'][0]['http://purl.org/dc/terms/']['identifier'][0]['value']
-                  finalSeriesString=finalSeriesString+title+ " ; "+seriesId+'\n'
+                  print (archiveresult['catalogs'][0]['http://purl.org/dc/terms/'])
+                  finalSeriesString=finalSeriesString+title+ " ; "+seriesId+" ; "+getStartTimeFromEpisodeforSeries(seriesId)+'\n'
                   #safe id+title in an dictonary
                   seriesDiconary.update({seriesId:title})
+
       page=page+1
 
 

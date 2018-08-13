@@ -17,5 +17,8 @@ targetserver = "http://your.target.admin.de"
 targetuser = "opencast_system_account"
 targetpassword = "yourtargetpassword"
 
+#target engage Server
+targetengageserver = "https://your.target.engage.de"
+
 #TargetWorkflow
 targetworkflow="ng-import"
