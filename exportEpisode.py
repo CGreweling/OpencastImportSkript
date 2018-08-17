@@ -3,9 +3,9 @@ from requests.auth import HTTPDigestAuth
 from xml.etree import ElementTree
 from xml.dom import minidom
 import config
-from requests_toolbelt.multipart import encoder
-
-
+from subprocess import Popen, PIPE, STDOUT
+import addTrack
+import pycurl
 
 searchrequest = config.engageserver + config.searchendpoint + sys.argv[1]
 
@@ -42,10 +42,10 @@ if (archiveresult.json()['search-results'].get('result')):
     mediapackagearchive = archiveresult.json()['search-results']['result']['mediapackage']
     print json.dumps(mediapackagearchive)
     # get Tracks
-    try: 
+    try:
       trackfromarchive = jsonMakeObjectToList(mediapackagearchive['media']['track'])
     except TypeError:
-      print "No track"  
+      print "No track"
     attachmentsfromarchive = jsonMakeObjectToList(mediapackagearchive['attachments']['attachment'])
 else:
     archivePresentationTracks=True
@@ -119,11 +119,11 @@ def parseTagsToString(tags):
      #fix json bug, on element=not list element
      if  type(tags) is list :
             #tags=t.get("tags")
-            tags=','.join(tags)
-            return tags
+            stringTags=','.join(str(x) for x in tags)
+            return stringTags
      else:
             #tags= t.get("tags").get("tag")
-            return tags
+            return str(tags)
 
 
 #create correct json object
@@ -149,6 +149,7 @@ for a in mediapackagesearch['attachments']['attachment']:
     if (c.get('type') and c.get('url')):
         filename = str(a.get('url')).split("/")[-1]
         command = "curl --digest -u " + config.sourceuser +":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' " + a.get('url') + " -o " + filename
+        print command
         os.system(command)
         files = {'file': open(filename, 'rb')}
         tags = parseTagsToString(a.get("tags").get("tag"))
@@ -169,21 +170,12 @@ for t in mediapackagesearch['media']['track']:
         tags = parseTagsToString(t.get("tags").get("tag"))
         if (archivePresentationTracks):
           tags += ','+ 'archive'
-          session = requests.Session()
-          with open(filename, 'rb') as f:
-             #needed for Big Files
-             form = encoder.MultipartEncoder({
-              "documents": (filename, f, "application/octet-stream"),
-              "flavor": t.get("type"),
-              "mediaPackage": ingest_mp,
-              "tags" : tags,
-            })
-          headers = {"Prefer": "respond-async", "Content-Type": form.content_type}
-          ngest_track_resp = session.post(config.targetserver + "/ingest/addTrack", headers=config.header, auth=targetauth, data=payload, verify=False)
-
-        ingest_mp = ingest_track_resp.text
-        os.remove(filename)
-
+        track = filename.encode('ascii', 'ignore') 
+        flavor = str(t.get('type'))
+        fields = [('mediaPackage',str(ingest_mp)), ('flavor',str(flavor)),('tags',tags),
+                  ('BODY', (pycurl.FORM_FILE, track))]
+        ingest_mp = addTrack.http_request(config.targetserver + '/ingest/addTrack', fields)
+        os.remove(track) 
 
 
 def prettify(elem):

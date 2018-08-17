@@ -35,7 +35,7 @@ mediapackagesearch=jsonMakeObjectToList(mediapackagesearch)
 
 
 def publishedEpisode(episodeId):
-    restCall ='config.targetengageserver' + '/search/episode.json?id='+ episodeId
+    restCall ='https://video4.virtuos.uos.de' + '/search/episode.json?id='+ episodeId
     print restCall
     result = requests.get(restCall, auth=targetauth, headers=config.header, verify=False)
     total = int(result.json()['search-results']['total'])
