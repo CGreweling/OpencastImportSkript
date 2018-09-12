@@ -26,7 +26,7 @@ def http_request(url, post_data=None):
     curl.setopt(curl.HTTPHEADER, ['X-Requested-Auth: Digest'])
     curl.setopt(curl.FAILONERROR, True)
     curl.setopt(curl.FOLLOWLOCATION, True)
-    curl.perform()
+    perform= curl.perform()
     curl.close()
     result = buf.getvalue()
     buf.close()

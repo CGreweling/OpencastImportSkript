@@ -14,11 +14,9 @@ def handleSeries(seriesId):
 def existsSeries(seriesId):
     searchrequest = config.targetserver + '/series/'+ seriesId +'.xml'
     searchresult = requests.get(searchrequest, auth=targetauth, headers=config.header, verify=False)
-    if (searchresult.status_code==200):
-        print ("Series exists")
+    if (searchresult.status_code == requests.codes.ok):
         return True
     else:
-        print ("Series does not exist")
         return False
 
 
@@ -45,3 +43,7 @@ targetauth = HTTPDigestAuth(config.targetuser, config.targetpassword)
 
 
 seriesId=''
+
+
+
+
