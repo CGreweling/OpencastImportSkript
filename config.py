@@ -1,25 +1,24 @@
 #Digest login source server
 sourceuser = "matterhorn_system_account"
-sourcepassword = "soutriv6511"
+sourcepassword = "yourPassword"
 header = {"X-Requested-Auth": "Digest","X-Opencast-Matterhorn-Authorization": "True"}
 
 #Source Engage Server data
-engageserver = "http://video3.virtuos.uos.de"
+engageserver = "http://your.engage.de"
 searchendpoint = "/search/episode.json?id="
 seriesSearchendpoint = "/search/episode.json?sid="
 
 #Source Admin/Archive Server
-archiveserver = "http://mh-admin.virtuos.uos.de"
+archiveserver = "http://your.admin.de"
 archiveendpoint = "/episode/episode.json?id="
 
 #target admin/ingest server
-targetserver = "http://oc-admin.virtuos.uos.de:8080"
+targetserver = "http://your.target.admin.de"
 targetuser = "opencast_system_account"
-targetpassword = "soutriv6511_digest"
-
+targetpassword = "yourtargetpassword"
 
 #target engage Server
-targetengageserver = "https://video4.virtuos.uos.de"
+targetengageserver = "https://your.target.engage.de"
 
 #TargetWorkflow
 targetworkflow="ng-import"
