@@ -24,7 +24,7 @@ def createSeries(seriesXml,seriesACL):
     payload = {'series': seriesXml, 'acl': seriesACL}
     createSeries_resp = requests.post(config.targetserver + "/series/", headers=config.header,
                                       auth=targetauth, data=payload)
-    print createSeries_resp.text
+    print(createSeries_resp.text)
 
 def getSeriesXml(seriesId):
     searchrequest = config.archiveserver + '/series/' + seriesId + '.xml'
