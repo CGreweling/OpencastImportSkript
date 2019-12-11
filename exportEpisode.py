@@ -15,8 +15,6 @@ archiverequest = config.archiveserver + config.archiveendpoint + sys.argv[1]
 sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
 targetauth = HTTPDigestAuth(config.targetuser, config.targetpassword)
 
-# The Files will be downloaded to the lokal Disk, if false Opencast will download from set url in the Mediapackage
-downloadToDisk = True
 
 archivePresentationTracks = True
 
@@ -68,52 +66,26 @@ def parseTagsToString(tags):
         # tags= t.get("tags").get("tag")
         return str(tags)
 
-def getSignedURL(fileID,mediapacakgeID,xmlchild):
-    url=''
-    getURL= config.adminui'/admin-ng/event/'+ mediapacakgeID +'/asset/'+xmlchild+'/'+fileID+'.json'
-    print(getURL)
-    trackJson = requests.get(getURL, headers=config.header,
-                                      auth=sourceauth, verify=False).json()
-    url = trackJson['url']
-    print(url)
-
-    return url
-
 
 # download catalogs with curl and upload them to the target opencast
 def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 
     for catalog in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'):
         tags = []
-        signedURL = getSignedURL(catalog.get('id'),mediapackageSearch.get('id'),'catalog')
+
         print(catalog.get('id'))
         for tag in catalog.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
         tags = ",".join(tags)
 
         urlFromMp = catalog.find('{http://mediapackage.opencastproject.org}url').text
-        filename = str(urlFromMp.split("/")[-1])
 
-        #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
-        print(command)
-        os.system(command)
-        files = {'file': open(filename, 'rb')}
-
-        payload = {'flavor': str(catalog.get("type")), 'mediaPackage': str(ingest_mp), 'tags': str(tags)}
+        payload = {'url':urlFromMp, 'flavor': str(catalog.get("type")), 'mediaPackage': str(ingest_mp), 'tags': str(tags)}
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header,
-                                          files=files, auth=targetauth, data=payload, verify=False)
+                                          auth=targetauth, data=payload, verify=False)
         if ingest_track_resp.status_code == requests.codes.ok:
             ingest_mp = ingest_track_resp.text
-        print(ingest_track_resp.text)
-        payload = {'flavor': 'dublincore/episode', 'mediaPackage': str(ingest_track_resp), 'tags': str(tags)}
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header,
-                                          files=files, auth=targetauth, data=payload, verify=False)
 
-        if ingest_track_resp.status_code == requests.codes.ok:
-            ingest_mp = ingest_track_resp.text
-        print(ingest_track_resp.text)
-        os.remove(filename)
     return ingest_mp
 
 
@@ -122,28 +94,19 @@ def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
 
      for attechment in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
         tags = []
-        signedURL = getSignedURL(attechment.get('id'),mediapackageSearch.get('id'),'attachment')
         print(attechment.get('id'))
         for tag in attechment.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
         tags = ",".join(tags)
 
         urlFromMp = attechment.find('{http://mediapackage.opencastproject.org}url').text
-        filename = str(urlFromMp.split("/")[-1])
 
-        #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
-        print(command)
-        os.system(command)
-        files = {'file': open(filename, 'rb')}
-
-
-        payload = {'flavor': attechment.get("type"), 'mediaPackage': ingest_mp, 'tags': tags}
+        payload = {'url': urlFromMp, 'flavor': attechment.get("type"), 'mediaPackage': ingest_mp, 'tags': tags}
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addAttachment", headers=config.header,
-                                          files=files, auth=targetauth, data=payload, verify=False)
+                                          auth=targetauth, data=payload, verify=False)
         if ingest_track_resp.status_code == requests.codes.ok:
           ingest_mp = ingest_track_resp.text
-        os.remove(filename)
+
      return ingest_mp
 
 
@@ -153,27 +116,18 @@ def downloadTracksAndUpload(mediapackageSearch, ingest_mp):
 
     for track in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'):
         tags = []
-        signedURL = getSignedURL(track.get('id'),mediapackageSearch.get('id'),'media')
 
         for tag in track.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
         tags = ",".join(tags)
 
         urlFromMp = track.find('{http://mediapackage.opencastproject.org}url').text
-        filename = str(urlFromMp.split("/")[-1])
 
-        #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
-        print(command)
-        os.system(command)
-        files = {'file': open(filename, 'rb')}
-
-        payload = {'flavor': track.get("type"), 'mediaPackage': ingest_mp, 'tags': tags}
+        payload = {'url':urlFromMp, 'flavor': track.get("type"), 'mediaPackage': ingest_mp, 'tags': tags}
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header,
-                                          files=files, auth=targetauth, data=payload, verify=False)
+                                          auth=targetauth, data=payload, verify=False)
         if ingest_track_resp.status_code == requests.codes.ok:
             ingest_mp = ingest_track_resp.text
-        os.remove(filename)
     return ingest_mp
 
 
