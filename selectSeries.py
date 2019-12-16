@@ -1,8 +1,8 @@
 #!/bin/python
 import requests,re,os
 from requests.auth import HTTPDigestAuth
-import Tkinter as tk
-from Tkinter import *
+import tkinter as tk
+from tkinter import *
 import json
 import config
 
@@ -46,7 +46,7 @@ if archiveresult['catalogs']:
 
 #save all Series to File seperated by ';'
 f = open('All_Series_List.txt', 'w')
-f.write(finalSeriesString.encode('UTF-8'))
+f.write(finalSeriesString)
 f.close()
 
 selectedSeries = dict()

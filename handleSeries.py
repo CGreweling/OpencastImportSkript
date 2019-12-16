@@ -28,6 +28,7 @@ def createSeries(seriesXml,seriesACL):
 
 def getSeriesXml(seriesId):
     searchrequest = config.archiveserver + '/series/' + seriesId + '.xml'
+    print(searchrequest)
     searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
     return searchresult.text
 

@@ -6,11 +6,12 @@ import config
 import pycurl
 
 from subprocess import Popen, PIPE, STDOUT
-import addTrack
 
-searchrequest = config.engageserver + config.searchendpoint + sys.argv[1]
+# searchrequest = config.engageserver + config.searchendpoint + sys.argv[1]
+searchrequest = config.engageserver +"/search/episode.xml?id="+ sys.argv[1]
 
-archiverequest = config.archiveserver + config.archiveendpoint + sys.argv[1]
+# archiverequest = config.archiveserver + config.archiveendpoint + sys.argv[1]
+archiverequest = config.archiveserver + "/episode/episode.xml?id=" + sys.argv[1]
 
 sourceauth = HTTPDigestAuth(config.sourceuser, config.sourcepassword)
 targetauth = HTTPDigestAuth(config.targetuser, config.targetpassword)
@@ -31,21 +32,44 @@ def jsonMakeObjectToList(jsonobject):
 
 
 def getMediapackageDataFromSearch():
-    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header).text
-    return searchresult['search-results']['result']['mediapackage']
+    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
+    print(searchrequest)
+    searchresult = ElementTree.fromstring(searchresult.text)
+
+    return searchresult
 
 
 def getMediapackageDataFromArchive():
+    archiveResult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
+    archiveResult = ElementTree.fromstring(archiveResult.text)
 
-    return requests.get(archiverequest, auth=sourceauth, headers=config.header).text
+    return archiveResult
 
+
+def mergeMediapackageSearchandMediapackageArchive(archiveMp, searchMp):
+
+    #mediapackagexml= searchMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage')
+    #print(prettifyxml(mediapackagexml))
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog')
+    insertpoint.append(searchMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'))
+
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track')
+    insertpoint.append(searchMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'))
+
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment')
+    insertpoint.append(searchMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'))
+
+    return archiveMp
 
 def getMediapackageData():
 
     # Get mediapackage from episode/archive service
     archiveresult = getMediapackageDataFromArchive()
+    searchresult = getMediapackageDataFromSearch()
 
-    return archiveresult
+    mediaPackage = mergeMediapackageSearchandMediapackageArchive(archiveresult, searchresult)
+
+    return mediaPackage
 
 
 def createMediapackeOnIngestNode(mediaPackageId):
@@ -70,7 +94,7 @@ def parseTagsToString(tags):
 # download catalogs with curl and upload them to the target opencast
 def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 
-    for catalog in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'):
+    for catalog in mediapackageSearch.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'):
         tags = []
 
         print(catalog.get('id'))
@@ -80,7 +104,8 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 
         urlFromMp = catalog.find('{http://mediapackage.opencastproject.org}url').text
 
-        payload = {'url':urlFromMp, 'flavor': str(catalog.get("type")), 'mediaPackage': str(ingest_mp), 'tags': str(tags)}
+        payload = {'url': urlFromMp, 'flavor': str(catalog.get("type")), 'mediaPackage': str(ingest_mp), 'tags': str(tags)}
+        print(payload)
         ingest_track_resp = requests.post(config.targetserver + "/ingest/addCatalog", headers=config.header,
                                           auth=targetauth, data=payload, verify=False)
         if ingest_track_resp.status_code == requests.codes.ok:
@@ -92,7 +117,7 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 # download attachments with curl and upload them to the target opencast
 def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
 
-     for attechment in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
+     for attechment in mediapackageSearch.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
         tags = []
         print(attechment.get('id'))
         for tag in attechment.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
@@ -114,7 +139,7 @@ def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
 
 def downloadTracksAndUpload(mediapackageSearch, ingest_mp):
 
-    for track in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'):
+    for track in mediapackageSearch.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'):
         tags = []
 
         for tag in track.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
@@ -153,18 +178,15 @@ def ingestMediapackage(mediapackage):
 
 
 def main():
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
 
-    mediapackagesearch = getMediapackageData()
-    mediapackagexmltree = ElementTree.fromstring(mediapackagesearch)
 
-    #print(prettifyxml(mediapackagexmltree))
+    mediapackage = getMediapackageData()
+    #print(prettifyxml(mediapackage))
 
     ingest_mp = createMediapackeOnIngestNode(sys.argv[1])
-    ingest_mp = donwloadCatalogsAndUpload(mediapackagexmltree, ingest_mp)
-    ingest_mp = downloadAttachmentsAndUpload(mediapackagexmltree, ingest_mp)
-    ingest_mp = downloadTracksAndUpload(mediapackagexmltree, ingest_mp)
+    ingest_mp = donwloadCatalogsAndUpload(mediapackage, ingest_mp)
+    ingest_mp = downloadAttachmentsAndUpload(mediapackage, ingest_mp)
+    ingest_mp = downloadTracksAndUpload(mediapackage, ingest_mp)
 
     print(prettifyxml(ElementTree.fromstring(ingest_mp)))
     ingestMediapackage(ingest_mp)
