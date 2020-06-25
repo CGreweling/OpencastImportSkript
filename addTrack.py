@@ -1,7 +1,6 @@
 import pycurl
 import config
-import StringIO as bio
-from urllib import quote as urlquote
+import io as bio
 
 
 def http_request(url, post_data=None):

@@ -70,7 +70,7 @@ def parseTagsToString(tags):
 
 def getSignedURL(fileID,mediapacakgeID,xmlchild):
     url=''
-    getURL= config.adminui'/admin-ng/event/'+ mediapacakgeID +'/asset/'+xmlchild+'/'+fileID+'.json'
+    getURL= config.adminui+'/admin-ng/event/'+ mediapacakgeID +'/asset/'+xmlchild+'/'+fileID+'.json'
     print(getURL)
     trackJson = requests.get(getURL, headers=config.header,
                                       auth=sourceauth, verify=False).json()
@@ -122,7 +122,6 @@ def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
 
      for attechment in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
         tags = []
-        signedURL = getSignedURL(attechment.get('id'),mediapackageSearch.get('id'),'attachment')
         print(attechment.get('id'))
         for tag in attechment.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
@@ -199,10 +198,11 @@ def ingestMediapackage(mediapackage):
 
 
 def main():
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
+   # reload(sys)
+    #sys.setdefaultencoding('utf-8')
 
     mediapackagesearch = getMediapackageData()
+    print(mediapackagesearch)
     mediapackagexmltree = ElementTree.fromstring(mediapackagesearch)
 
     #print(prettifyxml(mediapackagexmltree))
