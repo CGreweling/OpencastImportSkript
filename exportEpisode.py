@@ -85,8 +85,9 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 
     for catalog in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'):
         tags = []
-        signedURL = getSignedURL(catalog.get('id'),mediapackageSearch.get('id'),'catalog')
         print(catalog.get('id'))
+        print(catalog.get('url'))
+        url = catalog.get('url')
         for tag in catalog.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
         tags = ",".join(tags)
@@ -95,7 +96,7 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
         filename = str(urlFromMp.split("/")[-1])
 
         #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
+        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + url + "' -o " + filename
         print(command)
         os.system(command)
         files = {'file': open(filename, 'rb')}
@@ -131,7 +132,7 @@ def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
         filename = str(urlFromMp.split("/")[-1])
 
         #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
+        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + urlFromMp + "' -o " + filename
         print(command)
         os.system(command)
         files = {'file': open(filename, 'rb')}
@@ -152,7 +153,6 @@ def downloadTracksAndUpload(mediapackageSearch, ingest_mp):
 
     for track in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'):
         tags = []
-        signedURL = getSignedURL(track.get('id'),mediapackageSearch.get('id'),'media')
 
         for tag in track.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
@@ -162,7 +162,7 @@ def downloadTracksAndUpload(mediapackageSearch, ingest_mp):
         filename = str(urlFromMp.split("/")[-1])
 
         #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + signedURL + "' -o " + filename
+        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + urlFromMp + "' -o " + filename
         print(command)
         os.system(command)
         files = {'file': open(filename, 'rb')}
