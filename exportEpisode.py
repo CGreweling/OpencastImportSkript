@@ -87,7 +87,6 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
         tags = []
         print(catalog.get('id'))
         print(catalog.get('url'))
-        url = catalog.get('url')
         for tag in catalog.findall('{http://mediapackage.opencastproject.org}tags/{http://mediapackage.opencastproject.org}tag'):
             tags.append(tag.text)
         tags = ",".join(tags)
@@ -96,7 +95,7 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
         filename = str(urlFromMp.split("/")[-1])
 
         #DownloadFile
-        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + url + "' -o " + filename
+        command = "curl --digest -u " + config.sourceuser + ":" + config.sourcepassword + " -H 'X-Requested-Auth: Digest' '" + urlFromMp + "' -o " + filename
         print(command)
         os.system(command)
         files = {'file': open(filename, 'rb')}
