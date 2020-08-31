@@ -38,14 +38,13 @@ def getMediapackageDataFromSearch():
     searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
     print(searchrequest)
     searchresult = ElementTree.fromstring(searchresult.text)
-
     return searchresult
 
 
 def getMediapackageDataFromArchive():
     archiveResult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
+    print(archiverequest)
     archiveResult = ElementTree.fromstring(archiveResult.text)
-
     return archiveResult
 
 
@@ -62,18 +61,18 @@ def getMediapackageData():
 
 def mergeMediapackageSearchandMediapackageArchive(archiveMp, searchMp):
 
-    mediapackagexml= archiveMp.find('{http://mediapackage.opencastproject.org}metadata')
+    mediapackagexml= archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata')
     print(prettifyxml(mediapackagexml))
 
-    insertpoint = archiveMp.find('{http://mediapackage.opencastproject.org}metadata')
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata')
     for catalogs in searchMp.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}metadata/{http://mediapackage.opencastproject.org}catalog'):
       insertpoint.append(catalogs)
 
-    insertpoint = archiveMp.find('{http://mediapackage.opencastproject.org}media')
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}media')
     for tracks in searchMp.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}media/{http://mediapackage.opencastproject.org}track'):
       insertpoint.append(tracks)
 
-    insertpoint = archiveMp.find('{http://mediapackage.opencastproject.org}attachments')
+    insertpoint = archiveMp.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}attachments')
     for attachments in searchMp.findall('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage/{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
      insertpoint.append(attachments)
 
@@ -180,7 +179,7 @@ def donwloadCatalogsAndUpload(mediapackageSearch, ingest_mp):
 
 # download attachments with curl and upload them to the target opencast
 def downloadAttachmentsAndUpload(mediapackageSearch, ingest_mp):
-
+     print("--Uploading Catalogs--")
      for attechment in mediapackageSearch.findall('{http://mediapackage.opencastproject.org}attachments/{http://mediapackage.opencastproject.org}attachment'):
         tags = []
         print(attechment.get('id'))
@@ -288,10 +287,9 @@ def main():
     ingest_mp = createMediapackeOnIngestNode(sys.argv[1])
 
     mediapackageSource = getMediapackageData()
+    mediapackageSource= mediapackageSource.find('{http://search.opencastproject.org}result/{http://mediapackage.opencastproject.org}mediapackage')
     print(prettifyxml(mediapackageSource))
     addSeriesIfexist(mediapackageSource)
-
-
     text_file = open  ("sourcexml.xml", "w")
     n = text_file.write(prettifyxml(mediapackageSource))
     text_file.close()

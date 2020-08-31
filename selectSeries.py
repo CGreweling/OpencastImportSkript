@@ -1,8 +1,8 @@
 #!/bin/python
 import requests,re,os
 from requests.auth import HTTPDigestAuth
-import Tkinter as tk
-from Tkinter import *
+import tkinter as tk
+from tkinter import *
 import json
 import config
 
