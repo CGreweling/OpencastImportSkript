@@ -6,6 +6,7 @@ from xml.dom import minidom
 import config
 import pycurl
 import handleSeries
+from requests_toolbelt import MultipartEncoder
 
 from subprocess import Popen, PIPE, STDOUT
 import addTrack
@@ -244,9 +245,10 @@ def downloadTracksAndUpload(mediapackageSearch, ingest_mp):
         os.system(command)
         files = {'file': open(filename, 'rb')}
 
-        payload = {'flavor': track.get("type"), 'mediaPackage': ingest_mp, 'tags': tags}
-        ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack", headers=config.header,
-                                          files=files, auth=targetauth, data=payload, verify=True)
+        payload = {'flavor': track.get("type"), 'mediaPackage': ingest_mp, 'tags': tags, 'BODY': (filename, open(filename, 'rb'))}
+        data = MultipartEncoder(fields=payload)
+        ingest_track_resp = requests.post(config.targetserver + "/ingest/addTrack",headers={'Content-Type': data.content_type, "X-Requested-Auth": "Digest"},
+                                           auth=targetauth, data=data, verify=False)
         if ingest_track_resp.status_code == requests.codes.ok:
             print("----   Ingested Tracks \n"+ ingest_track_resp.text)
             ingest_mp = ingest_track_resp.text
