@@ -35,7 +35,7 @@ def jsonMakeObjectToList(jsonobject):
 
 
 def getMediapackageDataFromSearch():
-    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header)
+    searchresult = requests.get(searchrequest, auth=sourceauth, headers=config.header,verify=False)
     print(searchrequest)
     searchresult = ElementTree.fromstring(searchresult.text)
 
@@ -43,7 +43,7 @@ def getMediapackageDataFromSearch():
 
 
 def getMediapackageDataFromArchive():
-    archiveResult = requests.get(archiverequest, auth=sourceauth, headers=config.header)
+    archiveResult = requests.get(archiverequest, auth=sourceauth, headers=config.header,verify=False)
     archiveResult = ElementTree.fromstring(archiveResult.text)
 
     return archiveResult
